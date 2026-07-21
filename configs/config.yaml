@@ -1,0 +1,110 @@
+# =============================================================================
+# AI Badminton Analytics Platform — Master Configuration
+# =============================================================================
+# Every module reads its parameters from this file. Change values here rather
+# than hard-coding them in backend modules, so the system stays reusable
+# across venues, camera angles, and hardware.
+# =============================================================================
+
+project:
+  name: "badminton-analytics-poc"
+  version: "0.1.0"
+
+# -----------------------------------------------------------------------------
+# Hardware / runtime
+# -----------------------------------------------------------------------------
+runtime:
+  device: "auto"            # "auto" | "cuda" | "cpu"
+  mixed_precision: true      # use fp16 on GPU where supported, saves VRAM
+  max_frame_dim: 1280        # frames are resized so max(h,w) <= this before inference
+  frame_stride: 1            # process every Nth frame (raise to 2-3 for very long videos)
+  batch_size: 8
+
+# -----------------------------------------------------------------------------
+# Match setup
+# -----------------------------------------------------------------------------
+match:
+  mode: "singles"           # "singles" (2 players) | "doubles" (4 players)
+  points_to_win: 21
+  win_by: 2
+  cap_at: 30
+
+# -----------------------------------------------------------------------------
+# Player detection (YOLO family via ultralytics)
+# -----------------------------------------------------------------------------
+detection:
+  model_name: "yolo11n.pt"       # preferred: YOLOv11 nano/small. Falls back to yolov8n.pt
+  fallback_model_name: "yolov8n.pt"
+  confidence_threshold: 0.35
+  iou_threshold: 0.5
+  person_class_id: 0             # COCO "person" class
+  imgsz: 960
+
+# -----------------------------------------------------------------------------
+# Tracking (multi-object tracker, ID-switch minimization)
+# -----------------------------------------------------------------------------
+tracking:
+  tracker: "botsort"              # "botsort" | "bytetrack" (both ship with ultralytics)
+  tracker_config: "botsort.yaml"  # ultralytics built-in tracker config name
+  track_buffer: 60                # frames to keep a lost track alive before dropping
+  match_thresh: 0.8
+
+# -----------------------------------------------------------------------------
+# Re-Identification (persistent player identity)
+# -----------------------------------------------------------------------------
+reid:
+  backend: "torchreid_osnet"      # "torchreid_osnet" | "torchvision_resnet50" (auto fallback)
+  embedding_dim: 512
+  similarity_metric: "cosine"
+  match_threshold: 0.55           # min cosine similarity to accept an identity match
+  needs_review_margin: 0.08       # if best match is within this margin of 2nd best -> low confidence
+  ema_alpha: 0.9                  # exponential moving average when updating a track's running embedding
+  gallery_min_images: 2
+  gallery_max_images: 3
+
+# -----------------------------------------------------------------------------
+# Court detection & homography
+# -----------------------------------------------------------------------------
+court:
+  detector: "heuristic_line_detection"   # replaceable with a trained keypoint model later
+  homography_refresh_every_n_frames: 150 # camera may drift/zoom on some YouTube feeds
+  manual_calibration_allowed: true       # UI fallback: user clicks 4 court corners
+
+# -----------------------------------------------------------------------------
+# Pose estimation
+# -----------------------------------------------------------------------------
+pose:
+  model_name: "yolo11n-pose.pt"
+  confidence_threshold: 0.3
+
+# -----------------------------------------------------------------------------
+# Shuttle detection & trajectory
+# -----------------------------------------------------------------------------
+shuttle:
+  detector: "tracknet_v2_placeholder"    # documented placeholder, see backend/shuttle/README
+  confidence_threshold: 0.25
+  max_gap_frames_for_interpolation: 5
+  min_speed_kmh_for_hit_event: 15
+
+# -----------------------------------------------------------------------------
+# Rally / point / service detection (heuristic, confidence-scored)
+# -----------------------------------------------------------------------------
+rally:
+  min_rally_frames: 15
+  shuttle_stationary_frames_for_end: 20
+  no_motion_grace_frames: 10
+
+scoring:
+  low_confidence_threshold: 0.55   # below this -> "Needs Review" instead of auto-score
+
+service:
+  min_confidence_to_auto_assign: 0.5
+
+# -----------------------------------------------------------------------------
+# Paths
+# -----------------------------------------------------------------------------
+paths:
+  models_dir: "models"
+  embeddings_dir: "embeddings"
+  outputs_dir: "outputs"
+  assets_dir: "assets"
