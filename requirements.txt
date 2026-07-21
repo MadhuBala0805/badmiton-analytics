@@ -1,0 +1,36 @@
+# =============================================================================
+# AI Badminton Analytics Platform — dependencies
+# Tested target: Google Colab (Python 3.10/3.11, CUDA-enabled GPU runtime)
+# =============================================================================
+
+# --- Core app ---------------------------------------------------------------
+streamlit>=1.35.0
+pyyaml>=6.0
+numpy>=1.26,<2.0
+pandas>=2.0
+
+# --- Computer vision / video ------------------------------------------------
+opencv-python-headless>=4.9.0
+scipy>=1.11
+matplotlib>=3.8
+
+# --- Detection / tracking / pose (Ultralytics ships YOLOv8/YOLOv11 + BoT-SORT
+#     + ByteTrack + pose models all through one package) ---------------------
+ultralytics>=8.3.0
+torch>=2.2.0
+torchvision>=0.17.0
+
+# --- Person Re-Identification ------------------------------------------------
+# torchreid is not consistently published to PyPI; install from GitHub.
+# The app auto-falls-back to a torchvision ResNet50 embedding if this fails
+# to install, so it is not a hard blocker — but for real ReID accuracy,
+# install it (see INSTALL.md).
+git+https://github.com/KaiyangZhou/deep-person-reid.git
+
+# --- Reporting ----------------------------------------------------------------
+# (weasyprint/reportlab optional — HTML report works without them; add one
+#  of these if you want direct PDF export instead of browser "Print to PDF")
+# weasyprint>=61.0
+
+# --- Colab convenience --------------------------------------------------------
+pyngrok>=7.1.0   # for exposing the Streamlit server's port from Colab
